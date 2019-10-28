@@ -15,7 +15,7 @@ import numpy as np
 
 
 class BitFlipEnv():
-    '''bit flipping environment for reinforcement learning.
+    """bit flipping environment for reinforcement learning.
     The environment is a 1D vector of binary values (state vector).
     At each step, the actor can flip a single bit (0 to 1 or 1 to 0).
     The goal is to flip bits until the state vector matches the
@@ -26,14 +26,14 @@ class BitFlipEnv():
 
     Internally the state and goal vector are a numpy array, which
     allows the vectors to be printed by the show_goal and show_state
-    methods. When '''
+    methods. When """
 
     def __init__(self, num_bits, verbose = False):
-        '''Initialize new instance of BitFlip class.
+        """Initialize new instance of BitFlip class.
         inputs: num_bits - number of bits in the environment; must
                 be an integer
                 verbose - prints state and goal vector after each
-                          step if True'''
+                          step if True"""
 
         # check that num_bits is a positive integer
         if (num_bits < 0) or (type(num_bits) != type(0)):
@@ -60,16 +60,16 @@ class BitFlipEnv():
         return
 
     def show_goal(self):
-        '''Returns the goal as a numpy array. Used for debugging.'''
+        """Returns the goal as a numpy array. Used for debugging."""
         return self.goal_vector
 
     def show_state(self):
-        '''Returns the state as a numpy array. Used for debugging.'''
+        """Returns the state as a numpy array. Used for debugging."""
         return self.state_vector
 
     def reset(self):
-        '''resets the environment. Returns a reset state_vector
-        and goal_vector as tf tensors'''
+        """resets the environment. Returns a reset state_vector
+        and goal_vector as tf tensors"""
 
         # randomly reset both the state and the goal vectors
         self.state_vector = np.random.randint(0, 2, self.num_bits)
@@ -80,16 +80,14 @@ class BitFlipEnv():
         # return as np array
         return self.state_vector, self.goal_vector
 
-
     def step(self, action):
-        '''take a step and flip one of the bits.
+        """take a step and flip one of the bits.
 
         inputs: action - integer index of the bit to flip
         outputs: state - new state_vector (tensor)
                  reward - 0 if state != goal and 1 if state == goal
-                 done - boolean value indicating if the goal has been reached'''
+                 done - boolean value indicating if the goal has been reached"""
         self.steps += 1
-
 
         if action < 0 or action >= self.num_bits:
             # check argument is in range
@@ -121,7 +119,7 @@ class BitFlipEnv():
             print("Reward:        ", reward)
 
         if done:
-            #print("Solved in: ", self.steps)
+            # print("Solved in: ", self.steps)
             pass
 
         # return state as numpy arrays

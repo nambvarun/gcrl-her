@@ -37,26 +37,26 @@ FLAGS = flags.FLAGS
 class Model(object) :
     '''Define Q-model'''
 
-    def __init__(self, num_bits, scope, reuse) :
+    def __init__(self, num_bits, scope, reuse):
         # initialize model
         hidden_dim = 256
-        with tf.variable_scope(scope,reuse = reuse) :
+        with tf.variable_scope(scope, reuse=reuse):
 
             # ======================== TODO modify code ========================
 
-            self.inp = tf.placeholder(shape = [None, num_bits],dtype = tf.float32)
+            self.inp = tf.placeholder(shape=[None, num_bits], dtype=tf.float32)
 
             # ========================      END TODO       ========================
             net = self.inp
-            net = slim.fully_connected(net,hidden_dim,activation_fn = tf.nn.relu)
-            self.out = slim.fully_connected(net,num_bits,activation_fn = None)
-            self.predict = tf.argmax(self.out,axis = 1)
-            self.action_taken = tf.placeholder(shape = [None],dtype = tf.int32)
-            action_one_hot = tf.one_hot(self.action_taken,num_bits)
-            Q_val = tf.reduce_sum(self.out*action_one_hot,axis = 1)
-            self.Q_target = tf.placeholder(shape = [None],dtype = tf.float32)
+            net = slim.fully_connected(net, hidden_dim, activation_fn=tf.nn.relu)
+            self.out = slim.fully_connected(net,num_bits, activation_fn=None)
+            self.predict = tf.argmax(self.out, axis=1)
+            self.action_taken = tf.placeholder(shape=[None], dtype=tf.int32)
+            action_one_hot = tf.one_hot(self.action_taken, num_bits)
+            Q_val = tf.reduce_sum(self.out*action_one_hot, axis=1)
+            self.Q_target = tf.placeholder(shape=[None], dtype=tf.float32)
             self.loss = tf.reduce_mean(tf.square(Q_val - self.Q_target))
-            self.train_step = tf.train.AdamOptimizer(learning_rate = 1e-3).minimize(self.loss)
+            self.train_step = tf.train.AdamOptimizer(learning_rate=1e-3).minimize(self.loss)
 
 
 def update_target_graph(from_scope,to_scope,tau):
@@ -68,9 +68,10 @@ def update_target_graph(from_scope,to_scope,tau):
     for (var1,var2) in zip(from_vars,to_vars) :
         ops.append(var2.assign(var2*tau + (1-tau)*var1))
 
-    return ops  
+    return ops
 
-def updateTarget(ops,sess) :
+
+def updateTarget(ops,sess):
     for op in ops :
         sess.run(op)
 
@@ -123,13 +124,13 @@ def solve_environment(state, goal_state, total_reward):
 
         inp_state = state
         # forward pass to find action
-        action = sess.run(model.predict,feed_dict = {model.inp : [inp_state]})[0]
+        action = sess.run(model.predict, feed_dict={model.inp: [inp_state]})[0]
         # take the action
-        next_state,reward,done, _ = bit_env.step(action)
+        next_state, reward, done, _ = bit_env.step(action)
         # add to the episode experience (what happened)
-        episode_experience.append((state,action,reward,next_state,goal_state))
+        episode_experience.append((state, action, reward, next_state, goal_state))
         # calculate total reward
-        total_reward+=reward
+        total_reward += reward
         # update state
         state = next_state
         # mark that we've finished the episode and succeeded with training
@@ -140,7 +141,6 @@ def solve_environment(state, goal_state, total_reward):
                 succeeded = True
 
         # ========================      END TODO       ========================
-
 
     return succeeded, episode_experience, total_reward
 
@@ -163,7 +163,7 @@ def update_replay_buffer(episode_experience, HER):
         # next state
         inputs_ = s_
         # add to the replay buffer
-        replay_buffer.add(inputs,a,r,inputs_)
+        replay_buffer.add(inputs, a, r, inputs_)
 
         # when HER is used, each call to update_replay_buffer should add num_relabeled
         # relabeled points to the replay buffer
@@ -182,7 +182,6 @@ def update_replay_buffer(episode_experience, HER):
             # episode
             pass
 
-
         elif HER == 'random':
              # random - relabel based on a random state in the episode
             pass
@@ -193,7 +192,6 @@ def update_replay_buffer(episode_experience, HER):
         else:
             print("Invalid value for Her flag - HER not used")
     return
-
 
 
 def plot_success_rate(success_rates, labels):
@@ -231,7 +229,6 @@ def flip_bits(HER = "None"):
 
     print("Running bit flip environment with %d bits and HER policy: %s" %(num_bits, HER))
 
-
     total_loss = []                  # training loss for each epoch
     success_rate = []                # success rate for each epoch
     
@@ -264,7 +261,6 @@ def flip_bits(HER = "None"):
             _,loss = sess.run([model.train_step,model.loss],feed_dict = {model.inp : state, model.action_taken : np.reshape(action,[-1]), model.Q_target : target_reward})
             # append loss from this optimization step to the list of losses
             losses.append(loss)
-
         
         updateTarget(update_ops,sess)                 # update target model by copying Q-policy to Q-target      
         success_rate.append(np.mean(successes))       # append mean success rate for this epoch
@@ -276,7 +272,7 @@ def flip_bits(HER = "None"):
 
 
 if __name__ == "__main__":
-    success_rate   = flip_bits(HER = FLAGS.HER)        # run again with type of HER specified
+    success_rate = flip_bits(HER=FLAGS.HER)        # run again with type of HER specified
     # pass success rate for each run as first argument and labels as second list
     plot_success_rate([success_rate], [FLAGS.HER])
 
