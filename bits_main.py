@@ -44,7 +44,7 @@ class Model(object) :
 
             # ======================== TODO modify code ========================
 
-            self.inp = tf.placeholder(shape=[None, num_bits], dtype=tf.float32)
+            self.inp = tf.placeholder(shape=[None, 2 * num_bits], dtype=tf.float32)
 
             # ========================      END TODO       ========================
             net = self.inp
@@ -65,14 +65,14 @@ def update_target_graph(from_scope,to_scope,tau):
     from_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, from_scope)
     to_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, to_scope)
     ops = []
-    for (var1,var2) in zip(from_vars,to_vars) :
+    for (var1,var2) in zip(from_vars, to_vars):
         ops.append(var2.assign(var2*tau + (1-tau)*var1))
 
     return ops
 
 
-def updateTarget(ops,sess):
-    for op in ops :
+def updateTarget(ops, sess):
+    for op in ops:
         sess.run(op)
 
 
@@ -93,21 +93,20 @@ bit_env = BitFlipEnv(num_bits)
 replay_buffer = Buffer(buffer_size,batch_size)
 
 # set up Q-policy (model) and Q-target (target_model)
-model = Model(num_bits,scope = 'model',reuse = False)
-target_model = Model(num_bits,scope = 'target_model',reuse = False)
+model = Model(num_bits, scope='model', reuse=False)
+target_model = Model(num_bits, scope='target_model', reuse=False)
 
-update_ops_initial = update_target_graph('model','target_model',tau = 0.0)
-update_ops = update_target_graph('model','target_model',tau = tau)
+update_ops_initial = update_target_graph('model', 'target_model', tau=0.0)
+update_ops = update_target_graph('model', 'target_model', tau=tau)
 
 sess = tf.InteractiveSession()
 sess.run(tf.global_variables_initializer())
 
 # start by making Q-target and Q-policy the same
-updateTarget(update_ops_initial,sess)
-
-
+updateTarget(update_ops_initial, sess)
 
 # ************   Helper functions    ************ #
+
 
 def solve_environment(state, goal_state, total_reward):
     """attempt to solve the bit flipping environment using the current policy"""
@@ -122,13 +121,15 @@ def solve_environment(state, goal_state, total_reward):
         
         # ======================== TODO modify code ========================
 
-        inp_state = state
+        inp_state = np.hstack((state, goal_state))
+        # inp_state = inp_state.reshape([-1, num_bits])
+
         # forward pass to find action
         action = sess.run(model.predict, feed_dict={model.inp: [inp_state]})[0]
         # take the action
         next_state, reward, done, _ = bit_env.step(action)
         # add to the episode experience (what happened)
-        episode_experience.append((state, action, reward, next_state, goal_state))
+        episode_experience.append((inp_state, action, reward, next_state, goal_state))
         # calculate total reward
         total_reward += reward
         # update state
@@ -157,11 +158,11 @@ def update_replay_buffer(episode_experience, HER):
         # copy actual experience from episode_experience to replay_buffer
 
         # ======================== TODO modify code ========================
-        s,a,r,s_,g = episode_experience[t]
+        s, a, r, s_, g = episode_experience[t]
         # state
         inputs = s,
         # next state
-        inputs_ = s_
+        inputs_ = np.hstack((s_, g))
         # add to the replay buffer
         replay_buffer.add(inputs, a, r, inputs_)
 
@@ -174,7 +175,7 @@ def update_replay_buffer(episode_experience, HER):
 
         elif HER == 'final':
             # final - relabel based on final state in episode
-            pass          
+            pass
 
         elif HER == 'future':
             # future - relabel based on future state. At each timestep t, relabel the
@@ -247,22 +248,22 @@ def flip_bits(HER = "None"):
             succeeded, episode_experience, total_reward = solve_environment(state, goal_state, total_reward)
             successes.append(succeeded)                     # track whether we succeeded in environment 
             update_replay_buffer(episode_experience, HER)   # add to the replay buffer; use specified  HER policy
-             
+
         for k in range(FLAGS.opt_steps):
             # optimize the Q-policy network
 
             # sample from the replay buffer
-            state,action,reward,next_state = replay_buffer.sample()
+            state, action, reward, next_state = replay_buffer.sample()
             # forward pass through target network   
-            target_net_Q = sess.run(target_model.out,feed_dict = {target_model.inp : next_state})
+            target_net_Q = sess.run(target_model.out, feed_dict={target_model.inp: next_state})
             # calculate target reward
-            target_reward = np.clip(np.reshape(reward,[-1]) + gamma * np.reshape(np.max(target_net_Q,axis = -1),[-1]),-1. / (1 - gamma), 0)
+            target_reward = np.clip(np.reshape(reward, [-1]) + gamma * np.reshape(np.max(target_net_Q, axis=-1), [-1]), -1. / (1 - gamma), 0)
             # calculate loss
-            _,loss = sess.run([model.train_step,model.loss],feed_dict = {model.inp : state, model.action_taken : np.reshape(action,[-1]), model.Q_target : target_reward})
+            _, loss = sess.run([model.train_step, model.loss], feed_dict={model.inp: state, model.action_taken: np.reshape(action, [-1]), model.Q_target: target_reward})
             # append loss from this optimization step to the list of losses
             losses.append(loss)
         
-        updateTarget(update_ops,sess)                 # update target model by copying Q-policy to Q-target      
+        updateTarget(update_ops, sess)                 # update target model by copying Q-policy to Q-target
         success_rate.append(np.mean(successes))       # append mean success rate for this epoch
 
         if i % FLAGS.log_interval == 0:
