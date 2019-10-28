@@ -35,7 +35,7 @@ flags.DEFINE_integer("opt_steps", 40, "Optimization steps in each epoch")
 FLAGS = flags.FLAGS
 
 class Model(object) :
-    '''Define Q-model'''
+    """Define Q-model"""
 
     def __init__(self, num_bits, scope, reuse):
         # initialize model
@@ -60,8 +60,8 @@ class Model(object) :
 
 
 def update_target_graph(from_scope,to_scope,tau):
-    '''update the target network by copying over the weights from the policy
-    network to the target network'''
+    """update the target network by copying over the weights from the policy
+    network to the target network"""
     from_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, from_scope)
     to_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, to_scope)
     ops = []
@@ -110,7 +110,7 @@ updateTarget(update_ops_initial,sess)
 # ************   Helper functions    ************ #
 
 def solve_environment(state, goal_state, total_reward):
-    '''attempt to solve the bit flipping environment using the current policy'''
+    """attempt to solve the bit flipping environment using the current policy"""
     
     # list for recording what happened in the episode
     episode_experience = []
@@ -146,12 +146,12 @@ def solve_environment(state, goal_state, total_reward):
 
 
 def update_replay_buffer(episode_experience, HER):
-    '''adds past experience to the replay buffer. Training is done with episodes from the replay
+    """adds past experience to the replay buffer. Training is done with episodes from the replay
     buffer. When HER is used, relabeled experiences are also added to the replay buffer
 
     inputs: epsidode_experience - list of transitions from the last episode
     modifies: replay_buffer
-    outputs: None'''
+    outputs: None"""
 
     for t in range(num_bits) :
         # copy actual experience from episode_experience to replay_buffer
@@ -195,12 +195,12 @@ def update_replay_buffer(episode_experience, HER):
 
 
 def plot_success_rate(success_rates, labels):
-    '''This function plots the success rate as a function of the number of cycles.
+    """This function plots the success rate as a function of the number of cycles.
     The results are averaged over num_epochs epochs.
 
     inputs: success_rates - list with each element a list of success rates for
                             a epochs of running flip_bits
-            labels - list of labels for each success_rate line'''
+            labels - list of labels for each success_rate line"""
 
     for i in range(len(success_rates)):
         plt.plot(success_rates[i], label=labels[i])
@@ -218,14 +218,14 @@ def plot_success_rate(success_rates, labels):
 # ************   Main training loop    ************ #
 
 def flip_bits(HER = "None"):
-    '''Main loop for running in the bit flipping environment. The DQN is
+    """Main loop for running in the bit flipping environment. The DQN is
     trained over num_epochs. In each epoch, the agent runs in the environment
     num_episodes number of times. The Q-target and Q-policy networks are
     updated at the end of each epoch. Within one episode, Q-policy attempts
     to solve the environment and is limited to the same number as steps as the
     size of the environment
 
-    inputs: HER - string specifying whether to use HER'''
+    inputs: HER - string specifying whether to use HER"""
 
     print("Running bit flip environment with %d bits and HER policy: %s" %(num_bits, HER))
 
