@@ -174,34 +174,64 @@ def update_replay_buffer(episode_experience, HER):
             pass
 
         elif HER == 'final':
-            if t == num_bits - 1:
-                # final - relabel based on final state in episode
-                final_state, _, final_reward, _, _ = episode_experience[-1]
-                final_state = final_state[:num_bits]
+            # final - relabel based on final state in episode
+            final_state, _, final_reward, _, _ = episode_experience[-1]
+            final_state = final_state[:num_bits]
 
-                random_states = np.random.choice(len(episode_experience), num_relabeled, replace=False)
+            # pick random state from episode experience.
+            # replay_state, replay_action, replay_reward, replay_next_state, _ = episode_experience[t]
 
-                for i in range(num_relabeled):
-                    # pick random state from episode experience.
-                    replay_state, replay_action, replay_reward, replay_next_state, _ = episode_experience[int(random_states[i])]
+            # modify inputs_ or inputs or both... not sure...
+            replay_state = np.hstack((s[:num_bits], final_state))
+            replay_next_state = np.hstack((s_, final_state))
 
-                    # modify inputs_ or inputs or both... not sure...
-                    replay_state = np.hstack((replay_state[:num_bits], final_state))
-                    replay_next_state = np.hstack((replay_next_state, final_state))
-
-                    # add it to replay buffer
-                    replay_buffer.add((replay_state, ), replay_action, final_reward, replay_next_state)
+            # add it to replay buffer
+            diff = np.sum(s[:num_bits] - final_state)
+            sparse_reward = 0 if diff == 0 else -1
+            replay_buffer.add((replay_state, ), a, sparse_reward, replay_next_state)
 
         elif HER == 'future':
             # future - relabel based on future state. At each timestep t, relabel the
             # goal with a randomly select timestep between t and the end of the
             # episode
+
             pass
+            # random_states = np.random.choice(len(episode_experience), num_relabeled + 1, replace=False)
+            # random_state, _, random_reward, _, _ = episode_experience[int(random_states[0])]
+            # random_state = random_state[:num_bits]
+            #
+            # for i in range(1, num_relabeled + 1):
+            #     # pick random state from episode experience.
+            #     replay_state, replay_action, replay_reward, replay_next_state, _ = episode_experience[
+            #         int(random_states[i])]
+            #
+            #     # modify inputs_ or inputs or both... not sure...
+            #     replay_state = np.hstack((replay_state[:num_bits], random_state))
+            #     replay_next_state = np.hstack((replay_next_state, random_state))
+            #
+            #     # add it to replay buffer
+            #     replay_buffer.add((replay_state,), replay_action, replay_reward - random_reward, replay_next_state)
+
 
         elif HER == 'random':
-             # random - relabel based on a random state in the episode
-            # if t == num_bits - 1:
-            pass
+            # random - relabel based on a random state in the episode
+            random_states = np.random.choice(len(episode_experience), num_relabeled, replace=False)
+            # random_state, _, random_reward, _, _ = episode_experience[int(random_states[0])]
+            # random_state = random_state[:num_bits]
+
+            for i in range(0, num_relabeled):
+                # pick random state from episode experience.
+                replay_state, replay_action, replay_reward, replay_next_state, _ = episode_experience[int(random_states[i])]
+
+                # modify inputs_ or inputs or both... not sure...
+                replay_state = np.hstack((s[:num_bits], replay_state[:num_bits]))
+                replay_next_state = np.hstack((s_, replay_next_state))
+
+                # add it to replay buffer
+                diff = np.sum(s[:num_bits] - replay_state[:num_bits])
+                sparse_reward = 0 if diff == 0 else -1
+                replay_buffer.add((replay_state, ), replay_action, sparse_reward, replay_next_state)
+
 
         # ========================      END TODO       ========================
         else:
