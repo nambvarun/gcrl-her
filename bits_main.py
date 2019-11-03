@@ -150,7 +150,7 @@ def update_replay_buffer(episode_experience, HER):
     """adds past experience to the replay buffer. Training is done with episodes from the replay
     buffer. When HER is used, relabeled experiences are also added to the replay buffer
 
-    inputs: epsidode_experience - list of transitions from the last episode
+    inputs: episode_experience - list of transitions from the last episode
     modifies: replay_buffer
     outputs: None"""
 
@@ -174,8 +174,23 @@ def update_replay_buffer(episode_experience, HER):
             pass
 
         elif HER == 'final':
-            # final - relabel based on final state in episode
-            pass
+            if t == num_bits - 1:
+                # final - relabel based on final state in episode
+                final_state, _, final_reward, _, _ = episode_experience[-1]
+                final_state = final_state[:num_bits]
+
+                random_states = np.random.choice(len(episode_experience), num_relabeled, replace=False)
+
+                for i in range(num_relabeled):
+                    # pick random state from episode experience.
+                    replay_state, replay_action, replay_reward, replay_next_state, _ = episode_experience[int(random_states[i])]
+
+                    # modify inputs_ or inputs or both... not sure...
+                    replay_state = np.hstack((replay_state[:num_bits], final_state))
+                    replay_next_state = np.hstack((replay_next_state, final_state))
+
+                    # add it to replay buffer
+                    replay_buffer.add((replay_state, ), replay_action, final_reward, replay_next_state)
 
         elif HER == 'future':
             # future - relabel based on future state. At each timestep t, relabel the
@@ -185,11 +200,10 @@ def update_replay_buffer(episode_experience, HER):
 
         elif HER == 'random':
              # random - relabel based on a random state in the episode
+            # if t == num_bits - 1:
             pass
 
         # ========================      END TODO       ========================
-
-
         else:
             print("Invalid value for Her flag - HER not used")
     return
