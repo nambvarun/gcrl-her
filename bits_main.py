@@ -195,22 +195,21 @@ def update_replay_buffer(episode_experience, HER):
             # goal with a randomly select timestep between t and the end of the
             # episode
 
-            pass
-            # random_states = np.random.choice(len(episode_experience), num_relabeled + 1, replace=False)
-            # random_state, _, random_reward, _, _ = episode_experience[int(random_states[0])]
-            # random_state = random_state[:num_bits]
-            #
-            # for i in range(1, num_relabeled + 1):
-            #     # pick random state from episode experience.
-            #     replay_state, replay_action, replay_reward, replay_next_state, _ = episode_experience[
-            #         int(random_states[i])]
-            #
-            #     # modify inputs_ or inputs or both... not sure...
-            #     replay_state = np.hstack((replay_state[:num_bits], random_state))
-            #     replay_next_state = np.hstack((replay_next_state, random_state))
-            #
-            #     # add it to replay buffer
-            #     replay_buffer.add((replay_state,), replay_action, replay_reward - random_reward, replay_next_state)
+            random_states = np.random.choice(len(episode_experience) - t, num_relabeled)
+            random_states = t + random_states
+
+            for i in range(0, num_relabeled):
+                # pick random state from episode experience.
+                replay_state, replay_action, replay_reward, replay_next_state, _ = episode_experience[int(random_states[i])]
+
+                # modify inputs_ or inputs or both... not sure...
+                replay_state = np.hstack((s[:num_bits], replay_state[:num_bits]))
+                replay_next_state = np.hstack((s_, replay_next_state))
+
+                # add it to replay buffer
+                diff = np.sum(s[:num_bits] - replay_state[:num_bits])
+                sparse_reward = 0 if diff == 0 else -1
+                replay_buffer.add((replay_state,), replay_action, sparse_reward, replay_next_state)
 
 
         elif HER == 'random':
