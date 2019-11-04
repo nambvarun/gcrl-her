@@ -66,7 +66,7 @@ class Model(object) :
 
             # ======================== TODO modify code ========================
 
-            self.inp = tf.placeholder(shape=[None, NUM_DIM], dtype=tf.float32)
+            self.inp = tf.placeholder(shape=[None, 2 * NUM_DIM], dtype=tf.float32)
 
             # ========================      END TODO       ========================
 
@@ -166,16 +166,17 @@ def solve_environment(state, goal_state, total_reward):
 
         # ======================== TODO modify code ========================
 
-        inp_state = state
+        # inp_state = state
+        inp_state = np.hstack((state, goal_state))
         # forward pass to find action
-        action = sess.run(model.predict,feed_dict = {model.inp : [inp_state]})[0]
+        action = sess.run(model.predict, feed_dict={model.inp: [inp_state]})[0]
         # take the action - use helper function to convert discrete actions to
         # actions in the Sawyer environment
-        next_state,reward,done, _ = take_action(action)
+        next_state, reward, done, _ = take_action(action)
         # add to the episode experience (what happened)
-        episode_experience.append((state, action, reward, next_state, goal_state))
+        episode_experience.append((inp_state, action, reward, next_state, goal_state))
         # calculate total reward
-        total_reward+= reward
+        total_reward += reward
         # update state
         state = next_state
         # mark that we've finished the episode and succeeded with training
@@ -207,9 +208,10 @@ def update_replay_buffer(episode_experience, HER):
         # state
         inputs = s
         # next state
-        inputs_ = s_
+        # inputs_ = s_
+        inputs_ = np.hstack((s_, g))
         # add to the replay buffer
-        replay_buffer.add(inputs,a,r,inputs_)
+        replay_buffer.add(inputs, a, r, inputs_)
 
         # when HER is used, each call to update_replay_buffer should add num_relabeled
         # relabeled points to the replay buffer
@@ -219,17 +221,59 @@ def update_replay_buffer(episode_experience, HER):
 
         elif HER == 'final':
             # final - relabel based on final state in episode
-            pass          
+            final_state, _, final_reward, _, _ = episode_experience[-1]
+            final_state = final_state[:NUM_DIM]
+
+            # pick random state from episode experience.
+            # replay_state, replay_action, replay_reward, replay_next_state, _ = episode_experience[t]
+
+            # modify inputs_ or inputs or both... not sure...
+            replay_state = np.hstack((s[:NUM_DIM], final_state))
+            print(final_state)
+            replay_next_state = np.hstack((s_, final_state))
+
+            # add it to replay buffer
+            diff = np.linalg.norm(s[:NUM_DIM] - final_state)
+            # diff = np.sum(s[:STEPS_PER_EPISODE] - final_state)
+            # sparse_reward = 0 if diff == 0 else -1
+            replay_buffer.add(replay_state, a, -diff, replay_next_state)
 
         elif HER == 'future':
             # future - relabel based on future state. At each timestep t, relabel the
             # goal with a randomly select timestep between t and the end of the
             # episode
-            pass
+            random_states = np.random.choice(len(episode_experience) - t, num_relabeled)
+            random_states = t + random_states
+
+            for i in range(0, num_relabeled):
+                # pick random state from episode experience.
+                replay_state, replay_action, replay_reward, replay_next_state, _ = episode_experience[
+                    int(random_states[i])]
+
+                # modify inputs_ or inputs or both... not sure...
+                replay_state = np.hstack((s[:NUM_DIM], replay_state[:NUM_DIM]))
+                replay_next_state = np.hstack((s_, replay_next_state))
+
+                # add it to replay buffer
+                diff = np.linalg.norm(s[:NUM_DIM] - replay_state[:NUM_DIM])
+                replay_buffer.add(replay_state, replay_action, -diff, replay_next_state)
+
 
         elif HER == 'random':
             # random - relabel based on a random state in the episode
-            pass
+            random_states = np.random.choice(len(episode_experience), num_relabeled, replace=False)
+
+            for i in range(0, num_relabeled):
+                # pick random state from episode experience.
+                replay_state, replay_action, replay_reward, replay_next_state, _ = episode_experience[int(random_states[i])]
+
+                # modify inputs_ or inputs or both... not sure...
+                replay_state = np.hstack((s[:NUM_DIM], replay_state[:NUM_DIM]))
+                replay_next_state = np.hstack((s_, replay_next_state))
+
+                # add it to replay buffer
+                diff = np.linalg.norm(s[:NUM_DIM] - replay_state[:NUM_DIM])
+                replay_buffer.add(replay_state, replay_action, -diff, replay_next_state)
 
         # ========================      END TODO       ========================
 
