@@ -58,34 +58,34 @@ STEPS_PER_EPISODE = FLAGS.steps_per_episode     # number of steps sawyer can tak
 
 
 class Model(object) :
-    '''Define Q-model'''
+    """Define Q-model"""
 
-    def __init__(self, num_act, scope, reuse) :
+    def __init__(self, num_act, scope, reuse):
         # initialize model
         hidden_dim = 256
-        with tf.variable_scope(scope,reuse = reuse):
+        with tf.variable_scope(scope, reuse=reuse):
 
             # ======================== TODO modify code ========================
 
-            self.inp = tf.placeholder(shape = [None, NUM_DIM],dtype = tf.float32)
+            self.inp = tf.placeholder(shape=[None, NUM_DIM], dtype=tf.float32)
 
             # ========================      END TODO       ========================
 
             net = self.inp
-            net = slim.fully_connected(net,hidden_dim,activation_fn = tf.nn.relu)
-            self.out = slim.fully_connected(net, num_act,activation_fn = None)
-            self.predict = tf.argmax(self.out,axis = 1)
-            self.action_taken = tf.placeholder(shape = [None],dtype = tf.int32)
+            net = slim.fully_connected(net, hidden_dim, activation_fn=tf.nn.relu)
+            self.out = slim.fully_connected(net, num_act, activation_fn=None)
+            self.predict = tf.argmax(self.out, axis=1)
+            self.action_taken = tf.placeholder(shape=[None], dtype=tf.int32)
             action_one_hot = tf.one_hot(self.action_taken, num_act)
-            Q_val = tf.reduce_sum(self.out*action_one_hot,axis = 1)
-            self.Q_target = tf.placeholder(shape = [None],dtype = tf.float32)
+            Q_val = tf.reduce_sum(self.out*action_one_hot, axis=1)
+            self.Q_target = tf.placeholder(shape=[None], dtype=tf.float32)
             self.loss = tf.reduce_mean(tf.square(Q_val - self.Q_target))
-            self.train_step = tf.train.AdamOptimizer(learning_rate = 1e-3).minimize(self.loss)
+            self.train_step = tf.train.AdamOptimizer(learning_rate=1e-3).minimize(self.loss)
 
 
 def update_target_graph(from_scope,to_scope,tau):
-    '''update the target network by copying over the weights from the policy
-    network to the target network'''
+    """update the target network by copying over the weights from the policy
+    network to the target network"""
     from_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, from_scope)
     to_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, to_scope)
     ops = []
@@ -95,7 +95,7 @@ def update_target_graph(from_scope,to_scope,tau):
     return ops  
 
 def updateTarget(ops,sess) :
-    for op in ops :
+    for op in ops:
         sess.run(op)
 
 
@@ -123,7 +123,7 @@ updateTarget(update_ops_initial,sess)
 
 
 def take_action(action):
-    '''passes the discrete action selected by the Q-network to the Sawyer Arm.
+    """passes the discrete action selected by the Q-network to the Sawyer Arm.
     The function returns the next state, the reward, and whether the environment
     was solved. The environment done returned is not the same as the environment
     done returned by the Sawyer environment. Due to discretization, it may not be
@@ -133,7 +133,7 @@ def take_action(action):
     inputs:  action - integer (0 to NUM_ACT-1) selected by the Q-network
     outputs: next_state - new state (x, y) location of arm
              reward - reward returned by Sawyer environment
-             done - boolean whether environment is solved'''
+             done - boolean whether environment is solved"""
 
     # maps actions selected by Q-network to Sawyer arm actions
     # array MUST be length NUM_ACT
@@ -155,7 +155,7 @@ def take_action(action):
     return next_state, reward, done, info
 
 def solve_environment(state, goal_state, total_reward):
-    '''attempt to solve the Sawyer Arm environment using the current policy'''
+    """attempt to solve the Sawyer Arm environment using the current policy"""
     
     # list for recording what happened in the episode
     episode_experience = []
@@ -193,13 +193,13 @@ def solve_environment(state, goal_state, total_reward):
 
 
 def update_replay_buffer(episode_experience, HER):
-    '''adds past experience to the replay buffer. Training is done with episodes from the replay
+    """adds past experience to the replay buffer. Training is done with episodes from the replay
     buffer. When HER is used, num_relabeled additional relabeled data points are also added
     to the replay buffer
 
     inputs:    epsidode_experience - list of transitions from the last episode
     modifies:  replay_buffer
-    outputs:   None'''
+    outputs:   None"""
 
     for t in range(STEPS_PER_EPISODE) :
         # copy actual experience from episode_experience to replay_buffer
@@ -243,14 +243,13 @@ def update_replay_buffer(episode_experience, HER):
     return
 
 
-
 def plot_success_rate(success_rates, labels):
-    '''This function plots the success rate as a function of the number of cycles.
+    """This function plots the success rate as a function of the number of cycles.
     The results are averaged over num_epochs epochs.
 
     inputs: success_rates - list with each element a list of success rates for
                             a epochs of running flip_bits
-            labels - list of labels for each success_rate line'''
+            labels - list of labels for each success_rate line"""
 
     for i in range(len(success_rates)):
         plt.plot(success_rates[i], label=labels[i])
@@ -268,13 +267,13 @@ def plot_success_rate(success_rates, labels):
 # ************   Main training loop    ************ #
 
 def run_sawyer(HER = "None"):
-    '''Main loop for running in the Sayer Arm environment. The DQN is
+    """Main loop for running in the Sayer Arm environment. The DQN is
     trained over num_epochs. In each epoch, the agent runs in the environment
     num_episodes number of times. The Q-target and Q-policy networks are
     updated at the end of each epoch. Within one episode, Q-policy attempts
     to solve the environment and is limited to STEPS_PER_EPISODE.
 
-    inputs: HER - string specifying whether to use HER'''
+    inputs: HER - string specifying whether to use HER"""
 
     print("Running Sawyer environment with HER policy: %s" %(HER))
 
