@@ -56,7 +56,6 @@ NUM_ACT = 4                                     # number of actions (discretized
 STEPS_PER_EPISODE = FLAGS.steps_per_episode     # number of steps sawyer can take for each try
 
 
-
 class Model(object) :
     """Define Q-model"""
 
@@ -94,10 +93,10 @@ def update_target_graph(from_scope,to_scope,tau):
 
     return ops  
 
+
 def updateTarget(ops,sess) :
     for op in ops:
         sess.run(op)
-
 
 
 # create Sawyer arm environment and replay buffer
@@ -118,7 +117,6 @@ sess.run(tf.global_variables_initializer())
 updateTarget(update_ops_initial,sess)
 
 
-
 # ************   Helper functions    ************ #
 
 
@@ -137,7 +135,7 @@ def take_action(action):
 
     # maps actions selected by Q-network to Sawyer arm actions
     # array MUST be length NUM_ACT
-    action_dic = {0:[-1, 0], 1:[1, 0], 2:[0, -1], 3:[0, 1]}
+    action_dic = {0: [-1, 0], 1: [1, 0], 2: [0, -1], 3: [0, 1]}
     # look up which action in Sawyer arm space corresponds to the selected integer action
     action_sawyer = np.array(action_dic[action])
     # take the action
@@ -153,6 +151,7 @@ def take_action(action):
     next_state = ob['observation'][0:2]
 
     return next_state, reward, done, info
+
 
 def solve_environment(state, goal_state, total_reward):
     """attempt to solve the Sawyer Arm environment using the current policy"""
@@ -187,8 +186,6 @@ def solve_environment(state, goal_state, total_reward):
                 succeeded = True
 
         # ========================      END TODO       ========================
-
-
     return succeeded, episode_experience, total_reward
 
 
@@ -206,14 +203,13 @@ def update_replay_buffer(episode_experience, HER):
 
         # ======================== TODO modify code ========================
 
-        s,a,r,s_,g = episode_experience[t]
+        s, a, r, s_, g = episode_experience[t]
         # state
         inputs = s
         # next state
         inputs_ = s_
         # add to the replay buffer
         replay_buffer.add(inputs,a,r,inputs_)
-
 
         # when HER is used, each call to update_replay_buffer should add num_relabeled
         # relabeled points to the replay buffer
@@ -230,7 +226,6 @@ def update_replay_buffer(episode_experience, HER):
             # goal with a randomly select timestep between t and the end of the
             # episode
             pass
-
 
         elif HER == 'random':
             # random - relabel based on a random state in the episode
@@ -277,7 +272,6 @@ def run_sawyer(HER = "None"):
 
     print("Running Sawyer environment with HER policy: %s" %(HER))
 
-
     total_loss = []                  # training loss for each epoch
     success_rate = []                # success rate for each epoch
     
@@ -314,7 +308,6 @@ def run_sawyer(HER = "None"):
             # append loss from this optimization step to the list of losses
             losses.append(loss)
 
-        
         updateTarget(update_ops,sess)                 # update target model by copying Q-policy to Q-target      
         success_rate.append(np.mean(successes))       # append mean success rate for this epoch
 
